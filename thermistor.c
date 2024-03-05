@@ -38,7 +38,7 @@ int main(void) {
         // Select minimum clock divide. Div  by 2. *
         ADC0.CTRLC = 0x00;
         
-        enum multiplexVals { OnChipTemperatureSensor = 0x42, PD1 = 0x01};
+        enum multiplexVals { OnChipTemperatureSensor = 0x42, PD1 = 0b00000010};
         
         u8 au8_multiplexSelectorVals[] = {
             OnChipTemperatureSensor,
@@ -89,26 +89,29 @@ int getTemperatureFromOnChipTempSensor(u32 u32_adcReading){
     u32_tempK *= u16_slope;
     u32_tempK += 0x0800;
     u32_tempK >>= 12; //Temp 1 Kelvin precision
-    return u32_tempK;
+    return u32_tempK - 273;
 }
 
 int getTemperatureFromThermistor(u32 u32_adcReading){
 //    ACTUAL   ||  MEASURED
-//    19 C         43.85 C/ 317 K
-     int R = 10000;
+//    21 C         20 C/ 293 K
+     float R_O = 10000;
+     float B = 3270;
+     float T_O = 298;
+     int R_fixed = 22000;
      float VO = u32_adcReading*5.0/4096;
-     float Rt = (VO*R)/(5-VO);
-     u32 u32_tempK = pow(
-                    (1.0/298) + (1.0/3270)*log((Rt/25000.0)),
+     float Rt = (VO*R_fixed)/(5-VO);
+     int u32_tempK = pow(
+                    (1.0/T_O) + (1.0/B)*log((Rt/R_O)),
                      -1);
      
-     return u32_tempK;
+     return u32_tempK - 273;
 }
 
     
 
 void testTemperature(u32 u32_tempK){
-    if(u32_tempK > 317 && u32_tempK < 320){
+    if(u32_tempK > 293 && u32_tempK < 320){
         PORTA.OUT |= 0x01;
     }
     else{
