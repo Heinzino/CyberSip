@@ -51,25 +51,26 @@ int main(void) {
         ADC0.COMMAND = 0x01;
               
         //Set up LED as Output Pins for testing
-        PORTA.DIRSET = 0b00000001;
+        PORTA.DIRSET = 0b00000011;
         
         PORTA.OUT &= ~(0x01);
+
         
     while (1) {
 
         if(ADC0.INTFLAGS & 0x01){ //Result is ready from ADC
             u32 u32_adcReading = ADC0.RES;
-            u32 u32_tempK;
+            u32 u32_tempC;
             ADC0.INTFLAGS &= 0x01; //Clear flag to read next time
             
+            //Implement thermistor reading
+            u32_tempC = getTemperatureFromThermistor(u32_adcReading);
             
-            if(ADC0.MUXPOS == OnChipTemperatureSensor){
-                u32_tempK = getTemperatureFromOnChipTempSensor(u32_adcReading);
-                testTemperature(u32_tempK);
+            if(u32_tempC < 60){
+                PORTA.OUT |= 0b00000010;
             }
-            else{ //Implement thermistor reading
-                u32_tempK = getTemperatureFromThermistor(u32_adcReading);
-                testTemperature(u32_tempK);
+            else{
+                PORTA.OUT &= 0b11111101;
             }
     
         }
@@ -92,13 +93,27 @@ int getTemperatureFromOnChipTempSensor(u32 u32_adcReading){
     return u32_tempK - 273;
 }
 
+
+/*
+@fn int getTemperatureFromThermistor(u32 u32_adcReading)
+@brief Calculates and returns temp in degree C from ADC reading
+
+REQUIRES:
+-Valid u32 adcReading and constants in function match voltage divider and
+ thermistor 
+ 
+PROMISES:
+-Returns temperature in degrees celsius
+*/
+
 int getTemperatureFromThermistor(u32 u32_adcReading){
 //    ACTUAL   ||  MEASURED
 //    21 C         20 C/ 293 K
-     float R_O = 10000;
-     float B = 3270;
-     float T_O = 298;
-     int R_fixed = 22000;
+     const float R_O = 10000;
+     const float B = 3270;
+     const  T_O = 298;
+     const int R_fixed = 22000;
+     
      float VO = u32_adcReading*5.0/4096;
      float Rt = (VO*R_fixed)/(5-VO);
      int u32_tempK = pow(
@@ -108,10 +123,21 @@ int getTemperatureFromThermistor(u32 u32_adcReading){
      return u32_tempK - 273;
 }
 
-    
+/*
+@fn  void testTemperature(u32 u32_tempK)
+@brief Turns on LED if temperature is between the lowerbound and higher bound
+ * of temperature 
 
+REQUIRES:
+-NONE
+ 
+PROMISES:
+-Turns on LED if temperature is between the bounds else LED is off
+*/
 void testTemperature(u32 u32_tempK){
-    if(u32_tempK > 293 && u32_tempK < 320){
+    int lowerBound = 20;
+    int higherBound = 40;
+    if(u32_tempK > lowerBound && u32_tempK < higherBound){
         PORTA.OUT |= 0x01;
     }
     else{
