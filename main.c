@@ -10,11 +10,45 @@
 #include "7seg.h"
 #include "rt.h"
 
+void setupPins(void);
+
+static int oldTemp = 0, newTemp = 0;
+
 int main(void) {
     /* Replace with your application code */
     
+    setupPins();
     
-    //PIN LAYOUT
+    while (1) {
+        
+        if(ADC0.INTFLAGS & 0x01){ //Result is ready from ADC
+            u32 u32_adcReading = ADC0.RES;
+            ADC0.INTFLAGS &= 0x01; //Clear flag to read next time
+            
+            newTemp = getTemperatureFromThermistor(u32_adcReading);
+            
+            if((newTemp-oldTemp) >= 1){
+                oldTemp = newTemp;
+                displayTemp(newTemp);
+            }
+            
+            if(newTemp < 60){
+                PORTA.OUT |= 0b00000010; //RELAY ON
+            }
+            else{
+                PORTA.OUT &= 0b11111101; //RELAY OFF
+            }
+        
+        }
+        
+        
+        
+    }       
+}
+
+void setupPins(void){
+    
+     //PIN LAYOUT
     /*
      DS_pin PA4 (data pin,blue,MOSI)
      STCP   PA6 (serial clock, white, SCK)
@@ -24,7 +58,7 @@ int main(void) {
      */
     
     PORTA.DIRSET = 0b11010010; //Set ports to output
-    PORTA.OUT &= 0b00101111;
+    PORTA.OUT &= 0b00101111; 
     
     SPI0.CTRLA = 0b01100011; //Enable SPI, LSB, 12 MHZ SPI Frequency
     SPI0.CTRLB = 0b00000100; //Disable SS to manually use as a latch
@@ -57,36 +91,11 @@ int main(void) {
     // Start conversion.
     ADC0.COMMAND = 0x01;
     
-    int oldTemp = 0, newTemp = 0;
     if(ADC0.INTFLAGS & 0x01){ //Result is ready from ADC
         u32 u32_adcReading = ADC0.RES;
         ADC0.INTFLAGS &= 0x01; //Clear flag to read next time
         oldTemp = getTemperatureFromThermistor(u32_adcReading);
     }
     
-    while (1) {
-        
-        if(ADC0.INTFLAGS & 0x01){ //Result is ready from ADC
-            u32 u32_adcReading = ADC0.RES;
-            ADC0.INTFLAGS &= 0x01; //Clear flag to read next time
-            
-            newTemp = getTemperatureFromThermistor(u32_adcReading);
-            
-            if((newTemp-oldTemp) >= 1){
-                oldTemp = newTemp;
-                displayTemp(newTemp);
-            }
-            
-            if(newTemp < 60){
-                PORTA.OUT |= 0b00000010; //RELAY ON
-            }
-            else{
-                PORTA.OUT &= 0b11111101; //RELAY OFF
-            }
-        
-        }
-        
-        
-        
-    }       
+    
 }
