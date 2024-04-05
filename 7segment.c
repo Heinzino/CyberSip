@@ -37,9 +37,8 @@ u8 au8_digits[11] = {
   0b00000001, //Negative sign
 };
 
+/*
 int main(void) {
-    /* Replace with your application code */
-    
     PORTA.DIRSET = 0b11010000; //Set ports to output
     PORTA.OUT &= 0b00101111;
     
@@ -49,15 +48,16 @@ int main(void) {
     while (1) {
         displayDigit(2);
         _delay_ms(100);
-       /*
+       
         for(int i =0; i < 10; ++i){
             displayDigit(i);
             _delay_ms(300);
         }
-       */
+       
       
     }
 }
+*/
 
 /*
 @fn  void displayTemperature(int temp)
@@ -69,20 +69,23 @@ REQUIRES:
 PROMISES:
 - Displays two digit temperature onto the seven segment
 */
-void displayDigit(int numToDisplay){
+void displayTemp(int numToDisplay){
     
-    u8 secondDigit = au8_digits[(numToDisplay%10)];
-    //Send
-    
-    u8 firstDigit = getFirstDigit(numToDisplay);
-    //Send testing just one digit at the bottom
-    
-    u8 data = au8_digits[numToDisplay];
     char flush_buffer;
     PORTA.OUT &= 0b01111111; //Latch Low
-    SPI0.DATA = data; 
+    
+    //SEND DATA
+    u8 secondDigit = au8_digits[(numToDisplay%10)];
+    SPI0.DATA = secondDigit; 
     while(!(SPI0.INTFLAGS & 0b10000000)); //Wait for SPI data to transfer.
     flush_buffer = SPI0.DATA; //IF Flag cleared by reading IF then accessing Data
+    
+    u8 firstDigit = getFirstDigit(numToDisplay);
+    SPI0.DATA = firstDigit; 
+    while(!(SPI0.INTFLAGS & 0b10000000)); //Wait for SPI data to transfer.
+    flush_buffer = SPI0.DATA; //IF Flag cleared by reading IF then accessing Data    
+    
+    
     PORTA.OUT |= 0b10000000; //Latch High
 
     //Need to make pulse larger HIGH maybe us delay
