@@ -106,14 +106,5 @@ PROMISES:
  handling negative signs
 */
 u8 getFirstDigit(int temp){
-    u8 firstDigit;
-    if(temp < 0){
-        firstDigit = au8_digits[10]; //Negative sign
-    }
-    else{
-        firstDigit = au8_digits[(temp/10)%10];
-    }
-    return firstDigit;
+    return (temp < 0) ? au8_digits[10] : au8_digits[(temp / 10) % 10];
 }
-
-
